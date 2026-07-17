@@ -68,7 +68,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 # Version: chỉ tăng khi thay đổi lớn (tính năng mới). Build: tăng thêm 1 mỗi lần
 # sửa/vá lỗi, dù nhỏ, để người dùng phân biệt được đang chạy bản nào khi báo lỗi.
 $script:Version   = '2.0'
-$script:Build     = 10
+$script:Build     = 11
 $script:BuildDate = '2026-07-17'
 $script:UnknownVi = 'Không xác định'
 
@@ -133,25 +133,6 @@ function Remove-Diacritics {
         }
     }
     return $sb.ToString().Normalize([System.Text.NormalizationForm]::FormC)
-}
-
-# Bọc Write-Host: tự bỏ dấu mọi chuỗi in ra console (chỉ ảnh hưởng hiển thị,
-# không đụng tới dữ liệu findings dùng cho báo cáo HTML/JSON).
-function Write-Host {
-    param(
-        [Parameter(Position = 0, ValueFromPipeline = $true, ValueFromRemainingArguments = $true)] $Object,
-        [switch] $NoNewline,
-        [System.ConsoleColor] $ForegroundColor,
-        [System.ConsoleColor] $BackgroundColor,
-        [object] $Separator
-    )
-    if ($Object -is [string]) { $Object = Remove-Diacritics $Object }
-    $params = @{}
-    if ($NoNewline) { $params['NoNewline'] = $true }
-    if ($PSBoundParameters.ContainsKey('ForegroundColor')) { $params['ForegroundColor'] = $ForegroundColor }
-    if ($PSBoundParameters.ContainsKey('BackgroundColor')) { $params['BackgroundColor'] = $BackgroundColor }
-    if ($PSBoundParameters.ContainsKey('Separator'))       { $params['Separator'] = $Separator }
-    Microsoft.PowerShell.Utility\Write-Host @params $Object
 }
 
 # Kiểm tra một binary có bị giả mạo/vá hay không.
@@ -805,7 +786,7 @@ function Write-Banner {
     Write-Host '  | . \  | |___| | | |  __/ (__|   <| |___| | (_|  __/ | | \__ \  __/ ' -ForegroundColor Cyan
     Write-Host '  |_|\_\  \____|_| |_|\___|\___|_|\_\_____|_|\___\___|_| |_|___/\___| ' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host "  KCheckLicense v$($script:Version) (Build $($script:Build) - $($script:BuildDate)) - Kiểm tra bản quyền & phát hiện crack" -ForegroundColor White
+    Write-Host "  KCheckLicense v$($script:Version) (Build $($script:Build) - $($script:BuildDate)) - Kiem tra ban quyen & phat hien crack" -ForegroundColor White
     Write-Host '  Windows / Office / IDM / WinRAR / Adobe' -ForegroundColor DarkGray
     Write-Host '  Developed by TuanNgoVN  -  https://kollersi.com' -ForegroundColor DarkGray
     Write-Host '========================================================================' -ForegroundColor Gray
@@ -819,78 +800,78 @@ function Show-Report {
     Write-Banner
 
     $hw = $Report.Hardware
-    Write-Host '[I. THÔNG TIN PHẦN CỨNG]' -ForegroundColor Cyan
-    Write-Host '  • Mainboard   : ' -NoNewline; Write-Host $hw.Motherboard -ForegroundColor White
-    Write-Host '  • CPU         : ' -NoNewline; Write-Host "$($hw.Cpu) ($($hw.CpuCores) cores / $($hw.CpuThreads) threads)" -ForegroundColor White
-    Write-Host '  • RAM         : ' -NoNewline; Write-Host "$($hw.RamGB) GB ($($hw.RamSpeed) MHz, $($hw.RamSlots) thanh)" -ForegroundColor White
-    Write-Host '  • GPU         : ' -NoNewline; Write-Host $hw.Gpu -ForegroundColor White
-    Write-Host '  • Ổ lưu trữ   : ' -NoNewline; Write-Host $hw.Disks -ForegroundColor White
+    Write-Host '[I. THONG TIN PHAN CUNG]' -ForegroundColor Cyan
+    Write-Host '  - Mainboard   : ' -NoNewline; Write-Host (Remove-Diacritics $hw.Motherboard) -ForegroundColor White
+    Write-Host '  - CPU         : ' -NoNewline; Write-Host (Remove-Diacritics "$($hw.Cpu) ($($hw.CpuCores) cores / $($hw.CpuThreads) threads)") -ForegroundColor White
+    Write-Host '  - RAM         : ' -NoNewline; Write-Host (Remove-Diacritics "$($hw.RamGB) GB ($($hw.RamSpeed) MHz, $($hw.RamSlots) thanh)") -ForegroundColor White
+    Write-Host '  - GPU         : ' -NoNewline; Write-Host (Remove-Diacritics $hw.Gpu) -ForegroundColor White
+    Write-Host '  - O luu tru   : ' -NoNewline; Write-Host (Remove-Diacritics $hw.Disks) -ForegroundColor White
     Write-Host ''
 
     $win = $Report.Windows
-    Write-Host '[II. BẢN QUYỀN HỆ THỐNG]' -ForegroundColor Cyan
-    Write-Host '  • Windows              : ' -NoNewline; Write-Host $win.Edition -ForegroundColor White
-    Write-Host '  • Trạng thái kích hoạt : ' -NoNewline
-    if ($win.Status -like '*Đã kích hoạt*') { Write-Host $win.Status -ForegroundColor Green } else { Write-Host $win.Status -ForegroundColor Red }
-    Write-Host '  • Kênh phân phối       : ' -NoNewline; Write-Host $win.Channel -ForegroundColor White
+    Write-Host '[II. BAN QUYEN HE THONG]' -ForegroundColor Cyan
+    Write-Host '  - Windows              : ' -NoNewline; Write-Host (Remove-Diacritics $win.Edition) -ForegroundColor White
+    Write-Host '  - Trang thai kich hoat : ' -NoNewline
+    if ($win.Status -like '*Đã kích hoạt*') { Write-Host (Remove-Diacritics $win.Status) -ForegroundColor Green } else { Write-Host (Remove-Diacritics $win.Status) -ForegroundColor Red }
+    Write-Host '  - Kenh phan phoi       : ' -NoNewline; Write-Host (Remove-Diacritics $win.Channel) -ForegroundColor White
 
     $oem = if ($RevealKeys) { $win.OemKey } else { Get-MaskedKey $win.OemKey }
     $reg = if ($RevealKeys) { $win.RegistryKey } else { Get-MaskedKey $win.RegistryKey }
-    Write-Host '  • Product Key (BIOS)   : ' -NoNewline
-    Write-Host $oem -ForegroundColor $(if ($win.OemKey -eq 'Không tìm thấy') { 'DarkGray' } else { 'Yellow' })
-    Write-Host '  • Product Key (Reg)    : ' -NoNewline
-    Write-Host $reg -ForegroundColor $(if ($win.RegistryKey -like '*Không thể*') { 'DarkGray' } else { 'Yellow' })
+    Write-Host '  - Product Key (BIOS)   : ' -NoNewline
+    Write-Host (Remove-Diacritics $oem) -ForegroundColor $(if ($win.OemKey -eq 'Không tìm thấy') { 'DarkGray' } else { 'Yellow' })
+    Write-Host '  - Product Key (Reg)    : ' -NoNewline
+    Write-Host (Remove-Diacritics $reg) -ForegroundColor $(if ($win.RegistryKey -like '*Không thể*') { 'DarkGray' } else { 'Yellow' })
 
     if ($Report.Office.Count) {
-        Write-Host '  • Microsoft Office     :' -ForegroundColor Cyan
+        Write-Host '  - Microsoft Office     :' -ForegroundColor Cyan
         foreach ($off in $Report.Office) {
-            Write-Host "    - $($off.Name) : " -NoNewline
-            if ($off.Status -eq 'Đã kích hoạt') { Write-Host $off.Status -ForegroundColor Green -NoNewline } else { Write-Host $off.Status -ForegroundColor Red -NoNewline }
-            if ($off.KmsServer) { Write-Host " (KMS: $($off.KmsServer))" -ForegroundColor Yellow } else { Write-Host ' (kênh chính chủ)' -ForegroundColor Gray }
+            Write-Host "    - $(Remove-Diacritics $off.Name) : " -NoNewline
+            if ($off.Status -eq 'Đã kích hoạt') { Write-Host (Remove-Diacritics $off.Status) -ForegroundColor Green -NoNewline } else { Write-Host (Remove-Diacritics $off.Status) -ForegroundColor Red -NoNewline }
+            if ($off.KmsServer) { Write-Host " (KMS: $($off.KmsServer))" -ForegroundColor Yellow } else { Write-Host ' (kenh chinh chu)' -ForegroundColor Gray }
         }
     } else {
-        Write-Host '  • Microsoft Office     : ' -NoNewline; Write-Host 'Không phát hiện Office có bản quyền' -ForegroundColor DarkGray
+        Write-Host '  - Microsoft Office     : ' -NoNewline; Write-Host 'Khong phat hien Office co ban quyen' -ForegroundColor DarkGray
     }
     Write-Host ''
 
-    Write-Host '[III. KẾT QUẢ QUÉT CRACK / HACKTOOL]' -ForegroundColor Cyan
+    Write-Host '[III. KET QUA QUET CRACK / HACKTOOL]' -ForegroundColor Cyan
     $lastCategory = ''
     foreach ($f in ($Report.Findings | Sort-Object Category)) {
         if ($f.Category -ne $lastCategory) {
-            Write-Host "  ── $($f.Category) ──" -ForegroundColor DarkCyan
+            Write-Host "  -- $($f.Category) --" -ForegroundColor DarkCyan
             $lastCategory = $f.Category
         }
         switch ($f.Status) {
-            'Clean'    { $label = '[ SẠCH     ]'; $color = 'Green' }
-            'Info'     { $label = '[ THÔNG TIN]'; $color = 'Gray' }
-            'Warning'  { $label = '[ CẢNH BÁO ]'; $color = 'Yellow' }
-            'Detected' { $label = '[ PHÁT HIỆN]'; $color = 'Red' }
+            'Clean'    { $label = '[ SACH      ]'; $color = 'Green' }
+            'Info'     { $label = '[ THONG TIN ]'; $color = 'Gray' }
+            'Warning'  { $label = '[ CANH BAO  ]'; $color = 'Yellow' }
+            'Detected' { $label = '[ PHAT HIEN ]'; $color = 'Red' }
         }
         Write-Host "  $label " -ForegroundColor $color -NoNewline
-        Write-Host "$($f.Name): $($f.Details)" -ForegroundColor $(if ($f.Status -eq 'Clean') { 'White' } else { $color })
-        foreach ($ev in $f.Evidence) { Write-Host "               └ $ev" -ForegroundColor DarkGray }
+        Write-Host (Remove-Diacritics "$($f.Name): $($f.Details)") -ForegroundColor $(if ($f.Status -eq 'Clean') { 'White' } else { $color })
+        foreach ($ev in $f.Evidence) { Write-Host (Remove-Diacritics "               -> $ev") -ForegroundColor DarkGray }
     }
     Write-Host ''
 
-    Write-Host '[IV. KẾT LUẬN]' -ForegroundColor Cyan
+    Write-Host '[IV. KET LUAN]' -ForegroundColor Cyan
     $s = $Report.Summary
     if ($s.Detected -gt 0) {
         Write-Host '========================================================================' -ForegroundColor Red
-        Write-Host "  KẾT LUẬN: PHÁT HIỆN DẤU HIỆU CRACK ($($s.Detected) mục nghiêm trọng, $($s.Warning) cảnh báo)." -ForegroundColor Red
-        Write-Host '  Khuyến nghị: gỡ bỏ công cụ bẻ khóa và sử dụng bản quyền chính hãng.' -ForegroundColor Yellow
+        Write-Host "  KET LUAN: PHAT HIEN DAU HIEU CRACK ($($s.Detected) muc nghiem trong, $($s.Warning) canh bao)." -ForegroundColor Red
+        Write-Host '  Khuyen nghi: go bo cong cu be khoa va su dung ban quyen chinh hang.' -ForegroundColor Yellow
         Write-Host '========================================================================' -ForegroundColor Red
     } elseif ($s.Warning -gt 0) {
         Write-Host '========================================================================' -ForegroundColor Yellow
-        Write-Host "  KẾT LUẬN: CÓ $($s.Warning) CẢNH BÁO cần rà soát (không phát hiện file crack trực tiếp)." -ForegroundColor Yellow
-        Write-Host '  Hãy đối chiếu với hồ sơ mua bản quyền / chính sách doanh nghiệp.' -ForegroundColor White
+        Write-Host "  KET LUAN: CO $($s.Warning) CANH BAO can ra soat (khong phat hien file crack truc tiep)." -ForegroundColor Yellow
+        Write-Host '  Hay doi chieu voi ho so mua ban quyen / chinh sach doanh nghiep.' -ForegroundColor White
         Write-Host '========================================================================' -ForegroundColor Yellow
     } else {
         Write-Host '========================================================================' -ForegroundColor Green
-        Write-Host '  KẾT LUẬN: HỆ THỐNG SẠCH / BẢN QUYỀN HỢP LỆ.' -ForegroundColor Green
+        Write-Host '  KET LUAN: HE THONG SACH / BAN QUYEN HOP LE.' -ForegroundColor Green
         Write-Host '========================================================================' -ForegroundColor Green
     }
     if (-not $Report.IsAdmin) {
-        Write-Host '  (!) Đang chạy KHÔNG có quyền Administrator - một số mục có thể không đọc được đầy đủ.' -ForegroundColor DarkYellow
+        Write-Host '  (!) Dang chay KHONG co quyen Administrator - mot so muc co the khong doc duoc day du.' -ForegroundColor DarkYellow
     }
     Write-Host ''
 }
