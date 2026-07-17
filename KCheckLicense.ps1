@@ -100,13 +100,14 @@ $ErrorActionPreference = 'SilentlyContinue'
 # Version: chỉ tăng khi thay đổi lớn (tính năng mới). Build: tăng thêm 1 mỗi lần
 # sửa/vá lỗi, dù nhỏ, để người dùng phân biệt được đang chạy bản nào khi báo lỗi.
 $script:Version   = '2.1'
-$script:Build     = 15
+$script:Build     = 16
 $script:BuildDate = '2026-07-17'
 $script:UnknownVi = 'Không xác định'
 
 # Application ID của Windows / Office trong SoftwareLicensingProduct
 $script:WindowsAppId = '55c92734-d682-4d71-983e-d6ec3f16059f'
-$script:OfficeAppId  = '0ff1ce15-a989-479d-afc2-fb5b53c84000'
+$script:OfficeAppId  = '0ff1ce15-a989-479d-af46-f275c6370663'   # Office 2016/365 (đã xác minh chéo với MAS + KMS_VL_ALL)
+$script:OfficeAppIdLegacy = '59a52881-a989-479d-af46-f275c6370663'   # Office 2010
 
 # Trạng thái finding và độ ưu tiên (cao hơn = nghiêm trọng hơn)
 $script:StatusRank = @{ Clean = 0; Info = 1; Warning = 2; Detected = 3 }
@@ -122,6 +123,17 @@ $script:LicenseDomains = @{
     )
     IDM   = @('internetdownloadmanager.com', 'tonec.com', 'registeridm')
 }
+
+# Danh sach may chu KMS cong cong duoc MAS (Microsoft Activation Scripts) su dung de
+# kich hoat "Online KMS" - lay tu chinh ma nguon MAS (Online_KMS_Activation.cmd, ham
+# :_tasksetserv). Neu registry tro toi 1 trong nhung dia chi nay => chac chan la MAS,
+# khong phai KMS doanh nghiep, du may co gia nhap Domain hay khong.
+$script:KnownPublicKmsServers = @(
+    'kms.03k.org', 'kms-default.cangshui.net', 'kms.sixyin.com', 'kms.moeclub.org',
+    'kms.cgtsoft.com', 'kms.idina.cn', 'kms.moeyuuko.com', 'xincheng213618.cn',
+    'kms.loli.best', 'kms.mc06.net', 'kms.0t.net.cn', 'win.kms.pub',
+    'kms.wxlost.com', 'kms.moeyuuko.top', 'kms.ghxi.com', '222.184.9.98'
+)
 
 # ============================================================================
 # TIỆN ÍCH DÙNG CHUNG
@@ -415,12 +427,14 @@ function Get-WindowsLicenseInfo {
 
 function Get-OfficeLicenseInfo {
     $products = @()
-    $filter = "ApplicationID = '$($script:OfficeAppId)' AND PartialProductKey IS NOT NULL"
-    foreach ($obj in (Get-CimInstance -ClassName SoftwareLicensingProduct -Filter $filter)) {
-        $products += [PSCustomObject]@{
-            Name      = $obj.Name
-            Status    = if ($obj.LicenseStatus -eq 1) { 'Đã kích hoạt' } else { 'Chưa kích hoạt' }
-            KmsServer = $obj.KeyManagementServiceMachine
+    foreach ($appId in @($script:OfficeAppId, $script:OfficeAppIdLegacy)) {
+        $filter = "ApplicationID = '$appId' AND PartialProductKey IS NOT NULL"
+        foreach ($obj in (Get-CimInstance -ClassName SoftwareLicensingProduct -Filter $filter)) {
+            $products += [PSCustomObject]@{
+                Name      = $obj.Name
+                Status    = if ($obj.LicenseStatus -eq 1) { 'Đã kích hoạt' } else { 'Chưa kích hoạt' }
+                KmsServer = $obj.KeyManagementServiceMachine
+            }
         }
     }
     foreach ($obj in (Get-CimInstance -ClassName OfficeSoftwareProtectionProduct -Filter 'PartialProductKey IS NOT NULL')) {
@@ -459,6 +473,24 @@ function Invoke-WindowsActivationScan {
             }
         }
         $findings += (Get-KmsServerFinding -Server $server -Source $source -DomainJoined $domainJoined)
+    }
+
+    # CHECK: máy chủ KMS cấu hình riêng theo TỪNG sản phẩm (sub-key theo AppID/ProductGUID).
+    # MAS (KMS38 mode) ghi vào đây thay vì key mặc định để không ảnh hưởng sản phẩm khác -
+    # công cụ chỉ đọc key mặc định sẽ bỏ sót hoàn toàn trường hợp này.
+    $productKmsSources = @(
+        @{ Source = 'Windows'; Base = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\$($script:WindowsAppId)" }
+        @{ Source = 'Office';  Base = "HKLM:\SOFTWARE\Microsoft\OfficeSoftwareProtectionPlatform\$($script:OfficeAppId)" }
+        @{ Source = 'Office';  Base = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\OfficeSoftwareProtectionPlatform\$($script:OfficeAppId)" }
+    )
+    foreach ($pk in $productKmsSources) {
+        if (-not (Test-Path $pk.Base)) { continue }
+        foreach ($sub in (Get-ChildItem -Path $pk.Base -ErrorAction SilentlyContinue)) {
+            $val = (Get-ItemProperty -Path $sub.PSPath -Name 'KeyManagementServiceName' -ErrorAction SilentlyContinue).KeyManagementServiceName
+            if ($val) {
+                $findings += (Get-KmsServerFinding -Server $val -Source "$($pk.Source), theo sản phẩm $($sub.PSChildName)" -DomainJoined $domainJoined)
+            }
+        }
     }
 
     # CHECK: KMS38 (gia hạn kích hoạt tới 2038)
@@ -549,9 +581,16 @@ function Get-KmsServerFinding {
             -Details 'Không cấu hình máy chủ KMS ngoài.'
     }
     $srv = $Server.ToLower().Trim()
-    if ($srv -in @('127.0.0.1', 'localhost', '::1')) {
+    # Toan bo dai 127.0.0.0/8 deu la loopback - MAS dung 127.0.0.2 (khong chi 127.0.0.1)
+    # de tranh cac cong cu chi kiem tra dung 1 dia chi.
+    if ($srv -match '^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$' -or $srv -in @('localhost', '::1')) {
         return New-Finding -Category 'Windows' -Name "Máy chủ KMS ($Source)" -Status 'Detected' `
             -Details "Cấu hình KMS nội bộ (loopback: $Server) - dấu hiệu KMS Emulator cục bộ." -Evidence @($Server)
+    }
+    $knownMas = $script:KnownPublicKmsServers | Where-Object { $srv -eq $_ -or $srv -like "*$_*" }
+    if ($knownMas) {
+        return New-Finding -Category 'Windows' -Name "Máy chủ KMS ($Source)" -Status 'Detected' `
+            -Details "Cấu hình KMS server công cộng đã biết ($Server) - trùng danh sách MAS (Microsoft Activation Scripts) dùng để kích hoạt online." -Evidence @($Server)
     }
     if (-not $DomainJoined) {
         return New-Finding -Category 'Windows' -Name "Máy chủ KMS ($Source)" -Status 'Warning' `
