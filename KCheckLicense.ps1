@@ -68,7 +68,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 # Version: chỉ tăng khi thay đổi lớn (tính năng mới). Build: tăng thêm 1 mỗi lần
 # sửa/vá lỗi, dù nhỏ, để người dùng phân biệt được đang chạy bản nào khi báo lỗi.
 $script:Version   = '2.0'
-$script:Build     = 11
+$script:Build     = 12
 $script:BuildDate = '2026-07-17'
 $script:UnknownVi = 'Không xác định'
 
@@ -420,7 +420,7 @@ function Invoke-WindowsActivationScan {
         $server = ''
         foreach ($path in $kmsSources[$source]) {
             if (Test-Path $path) {
-                $val = (Get-ItemProperty -Path $path -Name 'KeyManagementServiceServer').KeyManagementServiceServer
+                $val = (Get-ItemProperty -Path $path -Name 'KeyManagementServiceName').KeyManagementServiceName
                 if ($val) { $server = $val; break }
             }
         }
