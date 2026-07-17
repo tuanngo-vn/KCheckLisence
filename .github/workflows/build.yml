@@ -50,31 +50,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: KCheckLicense.exe
-
-      - name: Cập nhật Release "latest" (mỗi lần build xong trên main)
-        if: github.ref == 'refs/heads/main'
-        shell: powershell
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          Write-Host "[*] gh version:"
-          gh --version
-
-          gh release view latest 1>$null 2>$null
-          $exists = ($LASTEXITCODE -eq 0)
-          Write-Host "[*] Release 'latest' da ton tai: $exists"
-
-          if ($exists) {
-            Write-Host "[*] Dang cap nhat file vao release 'latest'..."
-            gh release upload latest .\KCheckLicense.exe --clobber
-          } else {
-            Write-Host "[*] Dang tao moi release 'latest'..."
-            gh release create latest .\KCheckLicense.exe `
-              --title "KCheckLicense - Ban moi nhat" `
-              --notes "Ban build tu dong tu nhanh main. Link nay luon la ban moi nhat, tu dong cap nhat sau moi lan sua code."
-          }
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "Cap nhat release 'latest' that bai, exit code $LASTEXITCODE"
-          }
-          Write-Host "[OK] Da cap nhat release 'latest'."

@@ -103,18 +103,14 @@ powershell -ExecutionPolicy Bypass -File .\KCheckLicense.ps1 -ShowKeys
 Muốn phát hành **một file `.exe` duy nhất** (không cần `.ps1`/`.bat` kèm theo):
 
 - **Trên Windows:** chạy `Build-Exe.ps1` — tự cài PS2EXE và tạo `KCheckLicense.exe` (đã gắn `icon.ico`).
-- **Qua GitHub Actions (không cần Windows):** mỗi lần push code lên `main`, workflow tại `.github/workflows/build.yml` tự build `.exe` trên runner Windows và:
-  - Cập nhật vào **Release "latest"** — link tải cố định, luôn là bản mới nhất, không cần thao tác gì thêm:
+- **Qua GitHub Actions (không cần Windows):** mỗi lần push code lên `main`, workflow tại `.github/workflows/build.yml` tự build `.exe` trên runner Windows và đưa lên **Artifacts** của lần chạy đó (cần đăng nhập GitHub để tải). Muốn phát hành một **bản chính thức** (có link tải công khai, không cần đăng nhập), push kèm tag `v*`:
 
-    **[⬇️ Tải bản mới nhất](https://github.com/tuanngo-vn/KCheckLisence/releases/latest/download/KCheckLicense.exe)**
+  ```bash
+  git tag v2.0.12
+  git push origin v2.0.12
+  ```
 
-  - Đưa lên **Artifacts** của lần chạy đó (cần đăng nhập GitHub để tải).
-  - Nếu muốn chốt một **phiên bản chính thức** riêng (có link/tag cố định không bị ghi đè), push kèm tag `v*`:
-
-    ```bash
-    git tag v2.0.1
-    git push origin v2.0.1
-    ```
+  Actions sẽ tự tạo **Release** kèm file `.exe` đính sẵn tại `https://github.com/tuanngo-vn/KCheckLisence/releases`.
 
 ---
 
