@@ -100,7 +100,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 # Version: chỉ tăng khi thay đổi lớn (tính năng mới). Build: tăng thêm 1 mỗi lần
 # sửa/vá lỗi, dù nhỏ, để người dùng phân biệt được đang chạy bản nào khi báo lỗi.
 $script:Version   = '2.1'
-$script:Build     = 13
+$script:Build     = 14
 $script:BuildDate = '2026-07-17'
 $script:UnknownVi = 'Không xác định'
 
@@ -1091,23 +1091,60 @@ function Get-CleanupActions {
 # 4. LỚP ĐIỀU PHỐI (ORCHESTRATION)
 # ============================================================================
 
+# Nếu WMI/CIM hỏng trên máy (thường gặp trên máy đã bị crack phá), Get-CimInstance
+# có thể ném lỗi terminating thật sự thay vì chỉ trả về $null. Bọc riêng từng module
+# để 1 module lỗi không làm sập toàn bộ lần quét.
 function Invoke-FullScan {
-    $hostsEntries = @(Get-HostsEntries)
-    $winInfo = Get-WindowsLicenseInfo
-    $officeInfo = Get-OfficeLicenseInfo
+    $hostsEntries = @()
+    try { $hostsEntries = @(Get-HostsEntries) } catch { }
+
+    $winInfo = $null
+    try { $winInfo = Get-WindowsLicenseInfo } catch { }
+    if (-not $winInfo) {
+        $winInfo = [PSCustomObject]@{
+            Edition = $script:UnknownVi; Status = $script:UnknownVi; Channel = $script:UnknownVi
+            IsKms = $false; IsKms38 = $false; KmsServer = ''; GraceMinutes = 0
+            OemKey = 'Không tìm thấy'; RegistryKey = 'Không tìm thấy'
+        }
+    }
+
+    $officeInfo = @()
+    try { $officeInfo = @(Get-OfficeLicenseInfo) } catch { }
+
+    $hwInfo = $null
+    try { $hwInfo = Get-HardwareInfo } catch { }
+    if (-not $hwInfo) {
+        $hwInfo = [PSCustomObject]@{
+            Motherboard = $script:UnknownVi; Cpu = $script:UnknownVi; CpuCores = 0; CpuThreads = 0
+            RamGB = 0; RamSpeed = 0; RamSlots = 0; Gpu = $script:UnknownVi; Disks = $script:UnknownVi
+        }
+    }
+
+    $isAdmin = $false
+    try { $isAdmin = Test-IsAdministrator } catch { }
 
     $findings = @()
-    $findings += Invoke-WindowsActivationScan -WinInfo $winInfo
-    $findings += Invoke-OfficeActivationScan
-    $findings += Invoke-IdmScan -HostsEntries $hostsEntries
-    $findings += Invoke-WinrarScan
-    $findings += Invoke-AdobeScan -HostsEntries $hostsEntries
+    $scanModules = @(
+        @{ Name = 'Windows'; Action = { Invoke-WindowsActivationScan -WinInfo $winInfo } }
+        @{ Name = 'Office';  Action = { Invoke-OfficeActivationScan } }
+        @{ Name = 'IDM';     Action = { Invoke-IdmScan -HostsEntries $hostsEntries } }
+        @{ Name = 'WinRAR';  Action = { Invoke-WinrarScan } }
+        @{ Name = 'Adobe';   Action = { Invoke-AdobeScan -HostsEntries $hostsEntries } }
+    )
+    foreach ($m in $scanModules) {
+        try {
+            $findings += (& $m.Action)
+        } catch {
+            $findings += New-Finding -Category $m.Name -Name "Loi khi quet $($m.Name)" -Status 'Warning' `
+                -Details "Khong the hoan tat quet muc nay (co the do WMI/dich vu he thong bi loi): $($_.Exception.Message)"
+        }
+    }
 
     [PSCustomObject]@{
         GeneratedAt = (Get-Date).ToString('s')
         Computer    = $env:COMPUTERNAME
-        IsAdmin     = Test-IsAdministrator
-        Hardware    = Get-HardwareInfo
+        IsAdmin     = $isAdmin
+        Hardware    = $hwInfo
         Windows     = $winInfo
         Office      = $officeInfo
         Findings    = $findings
@@ -1598,6 +1635,21 @@ function Restore-ConsoleState {
     try { if ($CodePage) { chcp $CodePage > $null 2>&1 } } catch { }
 }
 
+# Hien loi ro rang thay vi de chuong trinh thoat lang le (khong hien gi ca).
+function Show-FatalError {
+    param($ErrorRecord)
+    Write-Host ''
+    Write-Host '========================================================================' -ForegroundColor Red
+    Write-Host '  DA XAY RA LOI NGOAI DU KIEN:' -ForegroundColor Red
+    Write-Host "  $($ErrorRecord.Exception.Message)" -ForegroundColor Yellow
+    if ($ErrorRecord.InvocationInfo -and $ErrorRecord.InvocationInfo.ScriptLineNumber) {
+        Write-Host "  Tai dong: $($ErrorRecord.InvocationInfo.ScriptLineNumber)" -ForegroundColor DarkGray
+    }
+    Write-Host '  Vui long chup lai man hinh nay va gui bao loi.' -ForegroundColor White
+    Write-Host '========================================================================' -ForegroundColor Red
+    Write-Host ''
+}
+
 try {
     # Chuyển console sang UTF-8 (KHÔNG BOM) để hiển thị tiếng Việt.
     try {
@@ -1613,10 +1665,10 @@ try {
 
     if ($Mode -eq 'Clean') {
         Clear-Host; Write-Banner
-        Invoke-CleanFlow
+        try { Invoke-CleanFlow } catch { Show-FatalError $_; if (-not $NonInteractive) { Read-Host 'Nhan Enter de thoat' | Out-Null } }
     } elseif ($Mode -eq 'Check' -or $Json -or $NonInteractive) {
         Clear-Host; Write-Banner
-        Invoke-CheckFlow
+        try { Invoke-CheckFlow } catch { Show-FatalError $_; if (-not $NonInteractive) { Read-Host 'Nhan Enter de thoat' | Out-Null } }
     } else {
         # Menu tuong tac: chon Kiem tra hoac Go bo.
         while ($true) {
@@ -1628,8 +1680,14 @@ try {
             Write-Host ''
             $choice = Read-Host 'Chon'
             switch ($choice.Trim().ToUpper()) {
-                '1' { Clear-Host; Write-Banner; Invoke-CheckFlow }
-                '2' { Clear-Host; Write-Banner; Invoke-CleanFlow }
+                '1' {
+                    Clear-Host; Write-Banner
+                    try { Invoke-CheckFlow } catch { Show-FatalError $_; Read-Host 'Nhan Enter de quay lai menu' | Out-Null }
+                }
+                '2' {
+                    Clear-Host; Write-Banner
+                    try { Invoke-CleanFlow } catch { Show-FatalError $_; Read-Host 'Nhan Enter de quay lai menu' | Out-Null }
+                }
                 'Q' { break }
                 default { Write-Host '[!] Lua chon khong hop le.' -ForegroundColor Red; Start-Sleep -Milliseconds 800 }
             }
@@ -1638,6 +1696,11 @@ try {
     }
 
     Write-Host 'Da thoat. Cam on ban da su dung KCheckLicense!' -ForegroundColor Green
+}
+catch {
+    # Luoi an toan cuoi cung - khong bao gio de chuong trinh bien mat khong ro ly do.
+    Show-FatalError $_
+    if (-not $NonInteractive) { Read-Host 'Nhan Enter de thoat' | Out-Null }
 }
 finally {
     # Luôn khôi phục encoding/codepage gốc dù thoát bằng Q, Ctrl+C hay gặp lỗi.
