@@ -36,7 +36,7 @@ jobs:
             -description 'Kiem tra ban quyen & phat hien crack Windows/Office/IDM/WinRAR/Adobe' `
             -company     'kollersi.com' `
             -product     'KCheckLicense' `
-            -version     '2.0.0.0'
+            -version     '2.1.0.0'
           if (-not (Test-Path .\KCheckLicense.exe)) { throw 'Bien dich that bai' }
 
       - name: Tải file .exe lên (artifact của mỗi lần chạy)

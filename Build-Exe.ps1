@@ -47,7 +47,7 @@ Invoke-ps2exe @iconArgs `
     -description 'Kiem tra ban quyen & phat hien crack Windows/Office/IDM/WinRAR/Adobe' `
     -company     'kollersi.com' `
     -product     'KCheckLicense' `
-    -version     '2.0.0.0'
+    -version     '2.1.0.0'
 
 if (Test-Path $output) {
     Write-Host "[OK] Da tao file: $output" -ForegroundColor Green
