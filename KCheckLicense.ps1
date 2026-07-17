@@ -57,8 +57,10 @@ param(
 )
 
 # Ensure Vietnamese characters display correctly in PowerShell console
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+try {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    [Console]::InputEncoding = [System.Text.Encoding]::UTF8
+} catch {}
 
 # StrictMode 1.0: bắt lỗi biến chưa khởi tạo nhưng vẫn cho phép truy cập thuộc tính
 # registry tùy chọn (nhiều check chủ động thăm dò khóa có thể không tồn tại).
