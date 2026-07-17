@@ -68,6 +68,17 @@ Muốn gọn hơn nữa — **1 file `.exe` duy nhất**? Xem mục [Đóng gói
 
 ---
 
+## 🚧 Giới hạn đã biết — kết quả SẠCH không đảm bảo 100%
+
+Công cụ phát hiện dựa trên **dấu vết vận hành** (KMS server, hook DLL, scheduled task/service...). Một số phương pháp kích hoạt mới **không để lại dấu vết đó**, nên **không thể phát hiện được**:
+
+- **TSforge / MAS** — không dùng KMS server, không cần gia hạn định kỳ, không chèn DLL hook. Nó ghi thẳng một "vé kích hoạt" giả vào Physical Store của Windows một lần duy nhất, không còn hoạt động ngầm nào để dò ra. Đây là giới hạn kỹ thuật thật sự, tác giả TSforge cũng không công khai chi tiết để phòng chống.
+- **HWID** — còn "vô hình" hơn: phương pháp này lợi dụng lỗ hổng khiến **máy chủ Microsoft thật sự cấp Digital License thật** cho phần cứng đó. Kết quả là giấy phép do chính Microsoft ký, **hoàn toàn giống hệt** trường hợp mua bản quyền thật hoặc nâng cấp từ Windows 7/8 chính chủ — không có công cụ nào (kể cả của Microsoft) phân biệt được bằng cách quét máy.
+
+**Kết luận:** dùng công cụ này để tầm soát các loại crack phổ biến (KMSpico, KMSAuto, Ohook, các tool giả lập KMS...), nhưng **không dùng làm bằng chứng pháp lý tuyệt đối** rằng máy hoàn toàn sạch — vẫn nên đối chiếu với hồ sơ mua bản quyền thật.
+
+---
+
 ## ⚙️ Cách dùng nâng cao (dòng lệnh)
 
 Chạy bằng **quyền Administrator** để đọc đầy đủ registry HKLM và cấu hình tường lửa.

@@ -100,7 +100,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 # Version: chỉ tăng khi thay đổi lớn (tính năng mới). Build: tăng thêm 1 mỗi lần
 # sửa/vá lỗi, dù nhỏ, để người dùng phân biệt được đang chạy bản nào khi báo lỗi.
 $script:Version   = '2.1'
-$script:Build     = 14
+$script:Build     = 15
 $script:BuildDate = '2026-07-17'
 $script:UnknownVi = 'Không xác định'
 
@@ -1258,6 +1258,13 @@ function Show-Report {
     } else {
         Write-Host '========================================================================' -ForegroundColor Green
         Write-Host '  KET LUAN: HE THONG SACH / BAN QUYEN HOP LE.' -ForegroundColor Green
+        if ($win.Status -like '*Đã kích hoạt*' -and $win.Channel -like '*Retail*' -and $win.RegistryKey -like 'BBBBB-BBBBB-BBBBB-BBBBB-BBBBB*') {
+            Write-Host '  - Windows kich hoat bang Digital License lien ket phan cung (khong co Product Key).' -ForegroundColor Gray
+            Write-Host '    Day cung la ket qua khi kich hoat qua phuong phap HWID (kha genuine that su tu' -ForegroundColor Gray
+            Write-Host '    Microsoft, cong cu KHONG THE phan biet voi mua ban quyen that/nang cap Win 7-8).' -ForegroundColor Gray
+        }
+        Write-Host '  Luu y: cong cu KHONG the phat hien phuong phap kich hoat moi nhu TSforge/HWID vi' -ForegroundColor DarkGray
+        Write-Host '  chung khong de lai dau vet KMS/hook/scheduled task. Ket qua SACH khong dam bao 100%.' -ForegroundColor DarkGray
         Write-Host '========================================================================' -ForegroundColor Green
     }
     if (-not $Report.IsAdmin) {
@@ -1297,7 +1304,7 @@ function Export-HtmlReport {
         $verdictText  = "CÓ $($s.Warning) CẢNH BÁO cần rà soát (không phát hiện file crack trực tiếp). Hãy đối chiếu với hồ sơ mua bản quyền / chính sách doanh nghiệp."
     } else {
         $verdictClass = 'clean'
-        $verdictText  = 'HỆ THỐNG SẠCH / BẢN QUYỀN HỢP LỆ.'
+        $verdictText  = 'HỆ THỐNG SẠCH / BẢN QUYỀN HỢP LỆ. Lưu ý: công cụ không thể phát hiện phương pháp kích hoạt mới như TSforge/HWID vì chúng không để lại dấu vết KMS/hook/scheduled task truyền thống — kết quả SẠCH không đảm bảo 100%.'
     }
 
     $rows = New-Object System.Collections.Generic.List[string]
