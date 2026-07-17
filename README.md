@@ -114,6 +114,34 @@ Muốn phát hành **một file `.exe` duy nhất** (không cần `.ps1`/`.bat` 
 
 ---
 
+## 🧹 Gỡ crack đã phát hiện — `KCleanCrack.ps1`
+
+Công cụ đi kèm để **gỡ đúng những gì `KCheckLicense.ps1` phát hiện**: KMS server giả (loopback), KMS Hook DLL, Office Ohook, IFEO hijack, scheduled task/service của công cụ crack, hosts/firewall bị chặn (Adobe/IDM), registry fake serial (IDM)...
+
+**Mặc định chạy dry-run — chỉ liệt kê, KHÔNG đổi gì trên máy:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\KCleanCrack.ps1
+```
+
+Thêm `-Apply` để thực sự gỡ:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\KCleanCrack.ps1 -Apply
+```
+
+| Tham số | Ý nghĩa |
+|---------|---------|
+| `-Apply` | Thực sự gỡ bỏ (không có thì chỉ xem trước) |
+| `-IncludeWarnings` | Gỡ luôn cả mức CẢNH BÁO (KMS server lạ chưa chắc là crack, `rarreg.key` chưa chắc là lậu) |
+| `-RemoveAdobePatchedDll` | Xóa `amtlib.dll` bị vá — có thể làm Adobe không mở được cho tới khi Repair/cài lại qua Creative Cloud, mặc định TẮT |
+| `-Rearm` | Chạy `slmgr /rearm` reset trạng thái kích hoạt Windows sau khi dọn |
+| `-NonInteractive` | Không hỏi xác nhận (dùng cho script tự động) |
+
+Sau khi gỡ, khuyến nghị chạy lại `KCheckLicense.ps1` để xác nhận đã sạch, và kích hoạt lại Windows/Office bằng key/tài khoản chính chủ.
+
+---
+
 ## 📋 Yêu cầu
 
 - Windows 10 / 11 hoặc Windows Server.

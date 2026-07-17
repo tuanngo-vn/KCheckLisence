@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title KCheckLicense - Kiem tra ban quyen & crack
+title KCheckLicense - Kiem tra ban quyen va crack
 
 REM ==========================================================================
 REM  Double-click file nay de chay KCheckLicense.
