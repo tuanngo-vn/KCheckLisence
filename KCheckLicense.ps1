@@ -56,12 +56,6 @@ param(
     [switch]$ShowKeys
 )
 
-# Ensure Vietnamese characters display correctly in PowerShell console
-try {
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-    [Console]::InputEncoding = [System.Text.Encoding]::UTF8
-} catch {}
-
 # StrictMode 1.0: bắt lỗi biến chưa khởi tạo nhưng vẫn cho phép truy cập thuộc tính
 # registry tùy chọn (nhiều check chủ động thăm dò khóa có thể không tồn tại).
 Set-StrictMode -Version 1.0
@@ -1039,17 +1033,31 @@ function Export-HtmlReport {
 # 6. ĐIỂM VÀO CHƯƠNG TRÌNH
 # ============================================================================
 
-# Đảm bảo console hiển thị tiếng Việt đúng: chuyển code page sang UTF-8 và dùng
-# UTF-8 KHÔNG BOM (tránh ký tự lạ ở đầu dòng do preamble của [Text.Encoding]::UTF8).
-try {
-    chcp 65001 > $null 2>&1
-    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-    [Console]::OutputEncoding = $utf8NoBom
-    try { [Console]::InputEncoding = $utf8NoBom } catch { }
-    $OutputEncoding = $utf8NoBom
-} catch { }
+# Lưu trạng thái console gốc để khôi phục khi thoát (không làm hỏng cửa sổ PowerShell
+# đang mở nếu người dùng chạy trực tiếp .ps1).
+$origOutEnc = $null; $origInEnc = $null; $origCodePage = $null
+try { $origOutEnc = [Console]::OutputEncoding } catch { }
+try { $origInEnc  = [Console]::InputEncoding } catch { }
+try { $origCodePage = ([string](chcp)) -replace '[^0-9]', '' } catch { }
 
-Write-Host '[*] Đang quét hệ thống, vui lòng chờ...' -ForegroundColor Yellow
+function Restore-ConsoleState {
+    param($OutEnc, $InEnc, $CodePage)
+    try { if ($OutEnc)   { [Console]::OutputEncoding = $OutEnc } } catch { }
+    try { if ($InEnc)    { [Console]::InputEncoding  = $InEnc } } catch { }
+    try { if ($CodePage) { chcp $CodePage > $null 2>&1 } } catch { }
+}
+
+try {
+    # Chuyển console sang UTF-8 (KHÔNG BOM) để hiển thị tiếng Việt.
+    try {
+        chcp 65001 > $null 2>&1
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [Console]::OutputEncoding = $utf8NoBom
+        try { [Console]::InputEncoding = $utf8NoBom } catch { }
+        $OutputEncoding = $utf8NoBom
+    } catch { }
+
+    Write-Host '[*] Đang quét hệ thống, vui lòng chờ...' -ForegroundColor Yellow
 $report = Invoke-FullScan
 
 # Xuất JSON (nếu yêu cầu)
@@ -1118,4 +1126,9 @@ while ($true) {
     }
 }
 
-Write-Host 'Đã thoát. Cảm ơn bạn đã sử dụng KCheckLicense!' -ForegroundColor Green
+    Write-Host 'Đã thoát. Cảm ơn bạn đã sử dụng KCheckLicense!' -ForegroundColor Green
+}
+finally {
+    # Luôn khôi phục encoding/codepage gốc dù thoát bằng Q, Ctrl+C hay gặp lỗi.
+    Restore-ConsoleState -OutEnc $origOutEnc -InEnc $origInEnc -CodePage $origCodePage
+}
