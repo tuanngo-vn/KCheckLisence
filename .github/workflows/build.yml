@@ -30,6 +30,7 @@ jobs:
           Invoke-ps2exe `
             -InputFile   .\KCheckLicense.ps1 `
             -OutputFile  .\KCheckLicense.exe `
+            -iconFile    .\icon.ico `
             -requireAdmin `
             -title       'KCheckLicense' `
             -description 'Kiem tra ban quyen & phat hien crack Windows/Office/IDM/WinRAR/Adobe' `

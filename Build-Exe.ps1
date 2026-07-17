@@ -14,6 +14,7 @@ $ErrorActionPreference = 'Stop'
 $here    = Split-Path -Parent $MyInvocation.MyCommand.Path
 $source  = Join-Path $here 'KCheckLicense.ps1'
 $output  = Join-Path $here 'KCheckLicense.exe'
+$icon    = Join-Path $here 'icon.ico'
 
 if (-not (Test-Path $source)) {
     Write-Host "[!] Khong tim thay $source" -ForegroundColor Red
@@ -34,7 +35,10 @@ if (-not (Get-Module -ListAvailable -Name ps2exe)) {
 Import-Module ps2exe
 
 Write-Host "[*] Dang bien dich -> $output" -ForegroundColor Yellow
-Invoke-ps2exe `
+$iconArgs = @{}
+if (Test-Path $icon) { $iconArgs['iconFile'] = $icon } else { Write-Host "[!] Khong tim thay icon.ico, bo qua icon." -ForegroundColor Yellow }
+
+Invoke-ps2exe @iconArgs `
     -InputFile   $source `
     -OutputFile  $output `
     -requireAdmin `
