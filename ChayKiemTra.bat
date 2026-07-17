@@ -19,11 +19,25 @@ if %errorlevel% neq 0 (
 
 REM --- Da co quyen Admin: chay script (dat thu muc lam viec ve noi chua file .bat) ---
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0KCheckLicense.ps1"
 
-REM Giu cua so neu script thoat som do loi
-if %errorlevel% neq 0 (
+if not exist "%~dp0KCheckLicense.ps1" (
     echo.
-    echo [!] Da co loi khi chay script (ma loi: %errorlevel%).
+    echo [!] Khong tim thay KCheckLicense.ps1 canh file .bat nay.
+    echo     Hay de ChayKiemTra.bat va KCheckLicense.ps1 chung mot thu muc.
+    echo.
     pause
+    exit /b
 )
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0KCheckLicense.ps1"
+set "RC=%errorlevel%"
+
+REM Luon dung lai de doc thong bao (khong bao gio tu dong dong cua so)
+echo.
+if not "%RC%"=="0" (
+    echo [!] Script ket thuc voi ma loi: %RC%
+) else (
+    echo [*] Da chay xong.
+)
+echo Nhan phim bat ky de dong cua so...
+pause >nul

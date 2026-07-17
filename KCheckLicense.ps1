@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     KCheckLicense - Công cụ kiểm tra bản quyền & phát hiện crack Windows/Office
     cùng các phần mềm phổ biến (IDM, WinRAR, Adobe).
