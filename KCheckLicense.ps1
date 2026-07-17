@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     KCheckLicense - Công cụ kiểm tra bản quyền & phát hiện crack Windows/Office
     cùng các phần mềm phổ biến (IDM, WinRAR, Adobe).
@@ -55,6 +55,10 @@ param(
     [switch]$NonInteractive,
     [switch]$ShowKeys
 )
+
+# Ensure Vietnamese characters display correctly in PowerShell console
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
 
 # StrictMode 1.0: bắt lỗi biến chưa khởi tạo nhưng vẫn cho phép truy cập thuộc tính
 # registry tùy chọn (nhiều check chủ động thăm dò khóa có thể không tồn tại).
@@ -952,7 +956,7 @@ function Export-HtmlReport {
   body { margin:0; font-family:'Segoe UI',Roboto,Arial,sans-serif; background:#f4f6f9; color:#1f2733; line-height:1.5; }
   .wrap { max-width:960px; margin:0 auto; padding:24px 16px 48px; }
   header { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 24px; background:#0d1b2a; color:#fff; border-radius:14px; }
-  header img { height:44px; }
+  header img { height:44px; background:#fff; padding:4px; border-radius:6px; }
   header h1 { font-size:20px; margin:0; }
   header .sub { font-size:13px; opacity:.75; }
   .meta { margin-left:auto; text-align:right; font-size:12px; opacity:.8; }
