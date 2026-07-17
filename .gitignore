@@ -4,6 +4,9 @@
 # Archives
 *.zip
 
+# Thư mục giải nén trùng lặp (bản tải về)
+/KCheckLisence/
+
 # Build output
 *.exe
 
