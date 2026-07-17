@@ -65,7 +65,11 @@ $ErrorActionPreference = 'SilentlyContinue'
 # HẰNG SỐ & CẤU HÌNH
 # ============================================================================
 
+# Version: chỉ tăng khi thay đổi lớn (tính năng mới). Build: tăng thêm 1 mỗi lần
+# sửa/vá lỗi, dù nhỏ, để người dùng phân biệt được đang chạy bản nào khi báo lỗi.
 $script:Version   = '2.0'
+$script:Build     = 9
+$script:BuildDate = '2026-07-17'
 $script:UnknownVi = 'Không xác định'
 
 # Application ID của Windows / Office trong SoftwareLicensingProduct
@@ -801,7 +805,7 @@ function Write-Banner {
     Write-Host '  | . \  | |___| | | |  __/ (__|   <| |___| | (_|  __/ | | \__ \  __/ ' -ForegroundColor Cyan
     Write-Host '  |_|\_\  \____|_| |_|\___|\___|_|\_\_____|_|\___\___|_| |_|___/\___| ' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host "  KCheckLicense v$($script:Version) - Kiểm tra bản quyền & phát hiện crack" -ForegroundColor White
+    Write-Host "  KCheckLicense v$($script:Version) (Build $($script:Build) - $($script:BuildDate)) - Kiểm tra bản quyền & phát hiện crack" -ForegroundColor White
     Write-Host '  Windows / Office / IDM / WinRAR / Adobe' -ForegroundColor DarkGray
     Write-Host '  Developed by TuanNgoVN  -  https://kollersi.com' -ForegroundColor DarkGray
     Write-Host '========================================================================' -ForegroundColor Gray
@@ -1031,7 +1035,7 @@ function Export-HtmlReport {
     <a href="https://kollersi.com"><img src="https://kollersi.com/content/images/2025/07/kollersi_logo_2024_tran-2.png" alt="Kollersi"></a>
     <div>
       <h1>🛡️ KCheckLicense — Báo cáo kiểm tra bản quyền</h1>
-      <div class="sub">Windows · Office · IDM · WinRAR · Adobe</div>
+      <div class="sub">Windows · Office · IDM · WinRAR · Adobe · v$($script:Version) (Build $($script:Build))</div>
     </div>
     <div class="meta">
       Máy: <strong>$(ConvertTo-HtmlSafe $Report.Computer)</strong><br>
@@ -1057,7 +1061,7 @@ function Export-HtmlReport {
   <h2>Kết quả quét crack / hacktool</h2>
   $findTable
 
-  <footer>Tạo bởi <strong>KCheckLicense v$($script:Version)</strong> · Developed by TuanNgoVN · <a href="https://kollersi.com">kollersi.com</a></footer>
+  <footer>Tạo bởi <strong>KCheckLicense v$($script:Version) (Build $($script:Build))</strong> · Developed by TuanNgoVN · <a href="https://kollersi.com">kollersi.com</a></footer>
 </div>
 </body>
 </html>
@@ -1097,6 +1101,9 @@ try {
         try { [Console]::InputEncoding = $utf8NoBom } catch { }
         $OutputEncoding = $utf8NoBom
     } catch { }
+
+    # Hiện version/build ngay trên tiêu đề cửa sổ - thấy được không cần đọc nội dung.
+    try { $Host.UI.RawUI.WindowTitle = "KCheckLicense v$($script:Version) Build $($script:Build) - Kiem tra ban quyen" } catch { }
 
     Write-Host '[*] Đang quét hệ thống, vui lòng chờ...' -ForegroundColor Yellow
 $report = Invoke-FullScan
