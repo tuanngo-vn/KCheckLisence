@@ -1033,9 +1033,14 @@ function Export-HtmlReport {
 # 6. ĐIỂM VÀO CHƯƠNG TRÌNH
 # ============================================================================
 
+# Đảm bảo console hiển thị tiếng Việt đúng: chuyển code page sang UTF-8 và dùng
+# UTF-8 KHÔNG BOM (tránh ký tự lạ ở đầu dòng do preamble của [Text.Encoding]::UTF8).
 try {
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-    $OutputEncoding = [System.Text.Encoding]::UTF8
+    chcp 65001 > $null 2>&1
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [Console]::OutputEncoding = $utf8NoBom
+    try { [Console]::InputEncoding = $utf8NoBom } catch { }
+    $OutputEncoding = $utf8NoBom
 } catch { }
 
 Write-Host '[*] Đang quét hệ thống, vui lòng chờ...' -ForegroundColor Yellow
