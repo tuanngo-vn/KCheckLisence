@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Archives
+*.zip
+
+# Build output
+*.exe
+
+# Báo cáo do công cụ sinh ra
+KCheckLicense_*.html
+report.json

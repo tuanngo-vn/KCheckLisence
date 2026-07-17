@@ -1,0 +1,51 @@
+name: Build KCheckLicense.exe
+
+# Chạy khi: push lên main, tạo tag v* (để phát hành), hoặc bấm tay trong tab Actions.
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # cần để đính kèm .exe vào Release khi push tag
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài PS2EXE
+        shell: powershell
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name ps2exe -Scope CurrentUser -Force
+
+      - name: Biên dịch KCheckLicense.ps1 -> KCheckLicense.exe
+        shell: powershell
+        run: |
+          Import-Module ps2exe
+          Invoke-ps2exe `
+            -InputFile   .\KCheckLicense.ps1 `
+            -OutputFile  .\KCheckLicense.exe `
+            -requireAdmin `
+            -title       'KCheckLicense' `
+            -description 'Kiem tra ban quyen & phat hien crack Windows/Office/IDM/WinRAR/Adobe' `
+            -company     'kollersi.com' `
+            -product     'KCheckLicense' `
+            -version     '2.0.0.0'
+          if (-not (Test-Path .\KCheckLicense.exe)) { throw 'Bien dich that bai' }
+
+      - name: Tải file .exe lên (artifact của mỗi lần chạy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: KCheckLicense
+          path: KCheckLicense.exe
+
+      - name: Đính kèm .exe vào Release (chỉ khi push tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: KCheckLicense.exe
