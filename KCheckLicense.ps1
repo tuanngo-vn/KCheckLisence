@@ -68,7 +68,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 # Version: chỉ tăng khi thay đổi lớn (tính năng mới). Build: tăng thêm 1 mỗi lần
 # sửa/vá lỗi, dù nhỏ, để người dùng phân biệt được đang chạy bản nào khi báo lỗi.
 $script:Version   = '2.0'
-$script:Build     = 9
+$script:Build     = 10
 $script:BuildDate = '2026-07-17'
 $script:UnknownVi = 'Không xác định'
 
@@ -1105,13 +1105,13 @@ try {
     # Hiện version/build ngay trên tiêu đề cửa sổ - thấy được không cần đọc nội dung.
     try { $Host.UI.RawUI.WindowTitle = "KCheckLicense v$($script:Version) Build $($script:Build) - Kiem tra ban quyen" } catch { }
 
-    Write-Host '[*] Đang quét hệ thống, vui lòng chờ...' -ForegroundColor Yellow
+    Write-Host '[*] Dang quet he thong, vui long cho...' -ForegroundColor Yellow
 $report = Invoke-FullScan
 
 # Xuất JSON (nếu yêu cầu)
 if ($OutputPath) {
     $report | ConvertTo-Json -Depth 6 | Out-File -FilePath $OutputPath -Encoding UTF8
-    Write-Host "[*] Đã lưu báo cáo JSON: $OutputPath" -ForegroundColor Green
+    Write-Host "[*] Da luu bao cao JSON: $OutputPath" -ForegroundColor Green
 }
 
 # Xác định đường dẫn báo cáo HTML:
@@ -1129,9 +1129,9 @@ if ($ReportPath) {
 if ($htmlReportPath) {
     try {
         Export-HtmlReport -Report $report -Path $htmlReportPath
-        Write-Host "[*] Đã xuất báo cáo HTML: $htmlReportPath" -ForegroundColor Green
+        Write-Host "[*] Da xuat bao cao HTML: $htmlReportPath" -ForegroundColor Green
     } catch {
-        Write-Host "[!] Không xuất được báo cáo HTML: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[!] Khong xuat duoc bao cao HTML: $($_.Exception.Message)" -ForegroundColor Red
         $htmlReportPath = $null
     }
 }
@@ -1145,11 +1145,11 @@ $revealKeys = [bool]$ShowKeys
 Show-Report -Report $report -RevealKeys $revealKeys
 
 $hotkeyHint = if ($htmlReportPath) {
-    '  [ H ] Ẩn/Hiện Product Key   |   [ R ] Mở báo cáo HTML   |   [ Q / ESC ] Thoát'
+    '  [ H ] An/Hien Product Key   |   [ R ] Mo bao cao HTML   |   [ Q / ESC ] Thoat'
 } else {
-    '  [ H ] Ẩn/Hiện Product Key   |   [ Q / ESC ] Thoát'
+    '  [ H ] An/Hien Product Key   |   [ Q / ESC ] Thoat'
 }
-if ($htmlReportPath) { Write-Host "  Báo cáo đã lưu: $htmlReportPath" -ForegroundColor DarkGray }
+if ($htmlReportPath) { Write-Host "  Bao cao da luu: $htmlReportPath" -ForegroundColor DarkGray }
 
 if ($NonInteractive) { return }
 
@@ -1161,20 +1161,20 @@ while ($true) {
     if ($key.Key -eq 'H') {
         $revealKeys = -not $revealKeys
         Show-Report -Report $report -RevealKeys $revealKeys
-        if ($htmlReportPath) { Write-Host "  Báo cáo đã lưu: $htmlReportPath" -ForegroundColor DarkGray }
+        if ($htmlReportPath) { Write-Host "  Bao cao da luu: $htmlReportPath" -ForegroundColor DarkGray }
         Write-Host $hotkeyHint -ForegroundColor Cyan
         Write-Host '------------------------------------------------------------------------' -ForegroundColor Gray
     } elseif ($key.Key -eq 'R' -and $htmlReportPath) {
         if (Test-Path -LiteralPath $htmlReportPath) {
             Start-Process $htmlReportPath
-            Write-Host "  [*] Đang mở báo cáo trong trình duyệt..." -ForegroundColor Green
+            Write-Host "  [*] Dang mo bao cao trong trinh duyet..." -ForegroundColor Green
         }
     } elseif ($key.Key -eq 'Q' -or $key.Key -eq 'Escape') {
         break
     }
 }
 
-    Write-Host 'Đã thoát. Cảm ơn bạn đã sử dụng KCheckLicense!' -ForegroundColor Green
+    Write-Host 'Da thoat. Cam on ban da su dung KCheckLicense!' -ForegroundColor Green
 }
 finally {
     # Luôn khôi phục encoding/codepage gốc dù thoát bằng Q, Ctrl+C hay gặp lỗi.
