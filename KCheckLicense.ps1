@@ -109,6 +109,47 @@ function New-Finding {
     }
 }
 
+# Bỏ dấu tiếng Việt + thay ký tự trang trí non-ASCII -> ASCII.
+# Dùng cho hiển thị console (chạy đúng trên mọi máy, không bao giờ ra '?').
+# Dữ liệu gốc (báo cáo HTML/JSON) KHÔNG dùng hàm này nên vẫn đủ dấu.
+function Remove-Diacritics {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    # Ký tự trang trí hay dùng -> ASCII
+    $Text = $Text -replace '[•·]', '-' -replace '[─—–]', '-' -replace '[└├│]', ' ' `
+                  -replace '→', '->' -replace '⚠', '(!)' -replace '[“”]', '"' -replace '[‘’]', "'"
+    # đ/Đ không phải dấu thanh, phải thay tay
+    $Text = $Text -replace 'đ', 'd' -replace 'Đ', 'D'
+    # Tách dấu thanh rồi loại bỏ (à->a, ế->e, ị->i, ...)
+    $norm = $Text.Normalize([System.Text.NormalizationForm]::FormD)
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($c in $norm.ToCharArray()) {
+        if ([System.Globalization.CharUnicodeInfo]::GetUnicodeCategory($c) -ne [System.Globalization.UnicodeCategory]::NonSpacingMark) {
+            [void]$sb.Append($c)
+        }
+    }
+    return $sb.ToString().Normalize([System.Text.NormalizationForm]::FormC)
+}
+
+# Bọc Write-Host: tự bỏ dấu mọi chuỗi in ra console (chỉ ảnh hưởng hiển thị,
+# không đụng tới dữ liệu findings dùng cho báo cáo HTML/JSON).
+function Write-Host {
+    param(
+        [Parameter(Position = 0, ValueFromPipeline = $true, ValueFromRemainingArguments = $true)] $Object,
+        [switch] $NoNewline,
+        [System.ConsoleColor] $ForegroundColor,
+        [System.ConsoleColor] $BackgroundColor,
+        [object] $Separator
+    )
+    if ($Object -is [string]) { $Object = Remove-Diacritics $Object }
+    $params = @{}
+    if ($NoNewline) { $params['NoNewline'] = $true }
+    if ($PSBoundParameters.ContainsKey('ForegroundColor')) { $params['ForegroundColor'] = $ForegroundColor }
+    if ($PSBoundParameters.ContainsKey('BackgroundColor')) { $params['BackgroundColor'] = $BackgroundColor }
+    if ($PSBoundParameters.ContainsKey('Separator'))       { $params['Separator'] = $Separator }
+    Microsoft.PowerShell.Utility\Write-Host @params $Object
+}
+
 # Kiểm tra một binary có bị giả mạo/vá hay không.
 # Trả về $null nếu file không tồn tại; ngược lại trả object mô tả chữ ký số.
 function Get-BinaryTrust {
